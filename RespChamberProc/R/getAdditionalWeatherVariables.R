@@ -19,11 +19,9 @@ library(openmeteo) #retrieves historical weather data from https://open-meteo.co
 
 #start- and endtime needs to be in ""%Y-%m-%d" format, e.g. "2022-05-01"
 getAdditionalWeatherVariables <- function(latDeciDeg,lonDeciDeg,starttime,endtime){
-  
-  
-  
   ## Create a data frame with the coordinates (Geographical Coordinates (decimal degrees); crs =4326)
   sampling_location<- data.frame(
     lat = latDeciDeg, #37.91514875822371
     lon = lonDeciDeg #-4.72405536319233,
   )
+}
