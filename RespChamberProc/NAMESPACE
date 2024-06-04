@@ -1,0 +1,24 @@
+exportPattern("^[^\\.]")	#exports all variables that do not start with a period.
+
+import(methods)		
+
+
+  importFrom("grDevices", "dev.off", "pdf")
+  importFrom("graphics", "abline", "legend", "lines", "mtext", "plot")
+  importFrom("stats", "AIC", "IQR", "coef", "coefficients", "lm",
+             "median", "quantile", "resid", "residuals", "sd", "update",
+             "vcov","fitted")
+  importFrom("utils", "capture.output", "read.table", "tail")
+  
+importFrom(changepoint, cpt.mean)
+importFrom(segmented, segmented, seg.control)
+importFrom(nlme, gls, corAR1, gnls, glsControl, gnlsControl)	# coef.corAR1	
+
+importFrom(tibble, tibble, as_tibble)
+importFrom(rlang, sym, syms, UQ)
+
+#import(ggplot2)		
+#importFrom(plyr, d_ply, dlply, ldply)	
+import(purrr)
+import(dplyr)			 
+#importFrom(lazyeval, interp)

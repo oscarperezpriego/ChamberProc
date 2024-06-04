@@ -1,0 +1,170 @@
+---
+author: "Thomas Wutzler"
+date: "`r Sys.Date()`"
+output: 
+  rmarkdown::html_vignette:
+    keep_md: true
+vignette: >
+  %\VignetteEngine{knitr::knitr}
+  %\VignetteIndexEntry{Processing several measurement cycles}
+  %\usepackage[UTF-8]{inputenc}
+---
+
+```{r setup, include = FALSE}
+# rmarkdown::render("vignettes/severalCycles.Rmd")
+library(knitr)
+opts_chunk$set(
+    #out.extra = 'style = "display:block; margin: auto"'
+    #, fig.align = "center"
+    fig.width = 4.3, fig.height = 3.2, dev.args = list(pointsize = 10)
+    , message = FALSE
+    , results = 'hold'
+    )
+knit_hooks$set(spar = function(before, options, envir) {
+    if (before) {
+        par( las = 1 )                   #also y axis labels horizontal
+        par(mar = c(2.0,3.3,0,0) + 0.3 )  #margins
+        par(tck = 0.02 )                          #axe-tick length inside plots             
+        par(mgp = c(1.1,0.2,0) )  #positioning of axis title, axis labels, axis
+     }
+})
+```
+
+
+Processing several measurement cycles
+=====================================
+
+```{r eval=FALSE, echo=FALSE, results='hide'}
+isDevelopMode <- TRUE
+library(twDev)
+setwd('..');loadPkg()
+```
+```{r results = 'hide', warning = FALSE}
+if (!exists("isDevelopMode")) library(RespChamberProc)
+set.seed(0815)      # for reproducible results
+```
+
+Determine subsets of single measurement cycles
+----------------------------------------------
+
+First, the data is loaded. Here, directly from zipped logger-output.
+```{r concAllPlot, spar = TRUE, fig.width = 12}
+fName <- system.file(
+  "genData/SMANIE_Chamber1_26032015.zip", package = "RespChamberProc")
+if (nzchar(fName) ) { 
+  ds <- readDat(
+    unz(fName, filename = unzip(fName, list = TRUE)[1,"Name"] ),tz = "UTC") }
+head(ds)
+plot( CO2_LI840 ~ TIMESTAMP, ds, ylab = "CO2 (ppm)", xlab = "Time")
+```
+
+The dataset contains several measurement cycles of light and dark chambers 
+with increasing or decreasing concentations respectively.
+
+First, we correct the pressure to standard units and correct the CO2
+concentrations for water vapour.
+```{r}
+ds$Pa <- ds$AirPres * 100  # convert hPa to Pa
+ds$CO2_dry <- corrConcDilution(ds, colConc = "CO2_LI840", colVapour = "H2O_LI840")
+ds$H2O_dry <- corrConcDilution(ds, colConc = "H2O_LI840", colVapour = "H2O_LI840")
+ds$VPD <- calcVPD( ds$SurTemp, ds$Pa, ds$H2O_LI840)
+```
+
+In order to process each measurement cycle independently, we first determine 
+parts of the time series that are contiguous, i.e. without gaps and without 
+change of an index variable, here variable `collar`.
+
+```{r}
+dsChunk <- subsetContiguous(ds, colTime = "TIMESTAMP", colIndex = "Collar") 
+head(dsChunk)
+```
+
+The new modified dataset contains a new variable, `iChunk`, holding a factor that
+changes with different measurement cycles.
+This factor can be used to select subset of single measurement cycles. 
+```{r concSinglePlot, spar = TRUE}
+dss <- subset(dsChunk, iChunk == 15)
+plot( CO2_dry ~ TIMESTAMP, dss, ylab = "CO2 (ppm)", xlab = "time (Minute:Second)")
+```
+
+Computing the flux
+------------------
+
+Function `calcClosedChamberFluxForChunks` helps with subsetting the data 
+and applying function `calcClosedChamberFlux` to each subset.
+
+```{r}
+# for demonstration use only the first 20 cycles
+dsChunk20 <- subset(dsChunk, as.integer(iChunk) <= 20) 
+chamberVol = 0.6*0.6*0.6		# chamber was a cube of 0.6m length
+surfaceArea = 0.6*0.6
+
+resChunks1 <- calcClosedChamberFluxForChunks(
+  dsChunk20, colTemp = "AirTemp"
+  # linear and saturating shape
+  , fRegress = c(lin = regressFluxLinear, tanh = regressFluxTanh)	
+  , debugInfo = list(omitEstimateLeverage = TRUE)	# faster
+  , volume = chamberVol
+  , area = surfaceArea
+)
+head(resChunks1)
+```
+
+The results are similar as for `calcClosedChamberFlux`, unless there are 
+several rows identified by additional key column iChunk.
+
+## Plotting faceted data and fits
+Plot the results to dectect problems. 
+```{r fittedPlots, spar = TRUE, fig.width = 11, fig.height = 6, warning = FALSE, message = FALSE}
+library(ggplot2)
+plots <- plotCampaignConcSeries( dsChunk20, resChunks1, plotsPerPage = 64L)  
+print(plots$plot[[1]]) # print the first page
+```
+
+If argument `fileName` is provided to `plotCampaignConcSeries`. All plots are
+written to a pdf. If there are more cycles, i.e. plots, than argument 
+`plotsPerPage`(default 64) there will be several pages in the pdf.
+
+## Inspecting lag-times
+
+Lag times between closing the chamber and the start of the concentration
+increase, i.e. when the gas arrives at the sensor, is by default estimated by a
+breakpoint detection method. This method is not robust to fluctuations, early
+saturation, or other possible pecularities of the concentration time series. In
+other to detect those subsets, where lag-time detection has failed, on can
+inspect the inferred lag-times for outliers.
+
+For a campaign where all the measurement cycles were performed with similar
+conditions, the lag-time should not differ much.
+
+```{r inspectLagTimes}
+table(resChunks1$tLag)
+```
+
+We infer that for this campaign a lag-time of about 15 seconds is appropriate.
+
+One can save processing time and avoid breakpoint-detection failures by specifying
+a fixed lag-time during the concentration fitting by parameter `useFixedTLag`.
+```{r}
+resChunks2 <- calcClosedChamberFluxForChunks(
+  dsChunk20, colTemp = "T_LI840"
+  # linear and saturating shape
+  , fRegress = c(lin = regressFluxLinear, tanh = regressFluxTanh)	
+  , debugInfo = list(omitEstimateLeverage = TRUE)	# faster
+  , volume = chamberVol
+  , area = surfaceArea
+  , useFixedTLag = 15
+)
+head(resChunks2)
+```
+```{r eval=FALSE, include=FALSE}
+ds2 <- resChunks2 %>% 
+  select(iChunk, flux) %>% 
+  rename( fluxFixed = flux )
+ds <- left_join(resChunks1, ds2, by = "iChunk")
+#ggplot( ds, aes(flux, fluxFixed)) + geom_point()
+ggplot( ds, aes(flux, I((fluxFixed - flux)/flux)*100) ) + geom_point()
+```
+
+
+
