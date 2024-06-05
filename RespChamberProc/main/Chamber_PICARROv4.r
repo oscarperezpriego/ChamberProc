@@ -40,9 +40,9 @@ library("devtools")
 library("stringr")
 library("ggplot2")
 
-rel_pathname <-  "Data_Jesus/" # "Data_Adrian/Agosto/19/"
-fileName <- "JFAADS2174-20220531-080209-DataLog_User.dat"    #"Data_Adrian/Agosto/16/JFAADS2174-20230817-000012-DataLog_User.dat"#"JFAADS2174-20220523-110548-DataLog_User.dat"
-
+rel_pathname <- "Data_Jesus/" #"Data_Adrian/Agosto/19/"
+fileName <- "JFAADS2174-20220531-080209-DataLog_User.dat"
+  
 #create folder with the name of the measurement archive to save results and plots therein
 dir.create(paste0(rel_pathname,"results"))
 
