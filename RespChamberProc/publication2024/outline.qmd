@@ -1,0 +1,52 @@
+---
+title: ChamberFlux (working title)
+subtitle: An adapted version of the R package "RespChamberFlux" to calculate gas fluxes measured with the PICARRO system (SUBTITLE TO BE ADAPTED)" 
+format:
+  #pdf
+  html:
+    code-fold: true
+date: last-modified
+bibliography: 'bibliography.bib'
+---
+
+
+
+
+
+# Introduction
+
+In this article, we present an adapted version of the R Statistical Software (@RSoftware) package RespChamberFlux (@RespChamberProc) to use with the PICARRO (REF) system.
+
+# Methodology
+All calculations were done using R Statistical Software version `r paste(version$major,version$minor,sep=".")` (@RSoftware) .
+
+# Results
+
+## Case study:
+
+
+
+<!-- ```{r} -->
+<!-- #| label: fig-meaningless -->
+<!-- #| fig-cap: A meaningless scatterplot -->
+<!-- #| fig-width: 5 -->
+<!-- #| fig-height: 5 -->
+<!-- #| fig-align: center -->
+<!-- #| out-width: 50% -->
+<!-- #| echo: false -->
+<!-- plot(runif(25), runif(25)) -->
+<!-- ``` -->
+
+# Discussion
+
+# Conclusions
+
+
+<!-- ```{r} -->
+<!-- #| label: tbl-simple -->
+<!-- #| tbl-cap: Caption centered above table -->
+<!-- #| echo: true -->
+<!-- knitr::kable(head(mtcars)[,1:4]) -->
+<!-- ``` -->
+
+# References {.unnumbered}

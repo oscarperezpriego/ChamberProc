@@ -7,26 +7,15 @@
 # install.packages("devtools")
 # devtools::install_github("bgctw/RespChamberProc")
 # 
-# pck <- c("rlang", "changepoint", "nlme", "segmented", "tibble",  "dplyr", "purrr", "RespChamberProc")
-#           
+# pck <- c("rlang", "changepoint", "nlme", "segmented", "tibble",  "dplyr", "purrr", "RespChamberProc","elevatr","openmeteo")
+# 
 # new_pck <-pck[!pck %in% installed.packages()[, "Package"]]
 #           if(length(new_pck)){install.packages(new_pck)}
-#           
+# 
 # sapply(pck, require, character.only=TRUE)
-# 
-# 
-# 
-# 
-# ## Set working directory
-setwd("/Users/ms/Library/CloudStorage/OneDrive-SharedLibraries-UniversidaddeCórdoba/Chamber - Chamber")
 
 
-#-------------------------------------------------------------------------------------
-##                      Preparing the Chamber data
-##-------------------------------------------------------------------------------------
-
-## 1. The .dat file is downloaded from the chamber logger after the field campaign. 
-
+# load libraries ----------------------------------------------------------
 library("rlang")
 library("changepoint")
 library("nlme")
@@ -39,6 +28,16 @@ library("RespChamberProc")
 library("devtools")
 library("stringr")
 library("ggplot2")
+
+
+# ## Set working directory
+setwd("/Users/ms/Library/CloudStorage/OneDrive-SharedLibraries-UniversidaddeCórdoba/Chamber - Chamber")
+
+
+# Preparing the Chamber data ----------------------------------------------
+
+
+## 1. The .dat file is downloaded from the chamber logger after the field campaign. 
 
 rel_pathname <- "Data_Jesus/" #"Data_Adrian/Agosto/19/"
 fileName <- "JFAADS2174-20220531-080209-DataLog_User.dat"
@@ -62,7 +61,8 @@ ds <- subset(ds0, as.numeric(TIMESTAMP) >= as.numeric(as.POSIXctUTC("2022-05-01 
 ds <- subset(ds, as.numeric(TIMESTAMP) <= as.numeric(as.POSIXctUTC("2025-04-15 23:00:00" )) )
 
 
-##-- 1. Correcting for gas density and units conversions
+
+# Correcting for gas density and units conversions ------------------------
 
 ## load function to automatically get elevation (AWS Mapzen elevation tiles: https://registry.opendata.aws/terrain-tiles/) 
 ## T and atmospheric pressure (data: https://open-meteo.com/en/docs/historical-weather-api) for a sampling location (to be entered in decimal degrees below)
@@ -122,13 +122,18 @@ plot(ds$TIMESTAMP,ds$ET0, pch = ".") #ET0 FAO Evapotranspiration (mm)
 
 plot(ds$TIMESTAMP,ds$Collar, pch = ".", ylab = "Collar (Chamber)",xlab = "Time")
 
-##play around with gaplength, minrec, min time
+
+
+# Chunk creation ----------------------------------------------------------
 
 dsChunk <- subsetContiguous(ds, colTime = "TIMESTAMP", colIndex = "Collar",
                             gapLength = 1, minNRec = 180, minTime = 180, indexNA = 13) #indexNA excludes selected index columns (here: collar)
 head(dsChunk)
 
-#-- plot the time series
+
+# plot the time series ----------------------------------------------------
+
+
 ## load function to generate plots for each chunk for various gases
 source("functions/ChunkPlots.R")
 
@@ -167,7 +172,8 @@ plot(df$TIMESTAMP, df$CO2_dry)
 
 
 
-##  Computing the flux
+# Computing the flux for single chunks ------------------------------------------------------
+
 
 resFit <- calcClosedChamberFlux(df
                                 , fRegress = c(lin = regressFluxLinear, tanh = regressFluxTanh, exp = regressFluxExp, poly= regressFluxSquare)
@@ -221,9 +227,8 @@ plotResp(df, resN2OFit,colConc = "N2O_dry",ylab="N2O_dry (ppm)", label = paste("
 
 
 
-##---------------------------------------------------------------------------
+# Computing the fluxes in a field campaign --------------------------------
 
-#--   3. Computing the fluxes in a field campaign
 # -- Function calcClosedChamberFluxForChunks helps you with subsetting the data 
 # -- and applying function calcClosedChamberFlux to each subset.
 
