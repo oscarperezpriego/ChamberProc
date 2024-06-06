@@ -13,6 +13,9 @@
  - Environmental Science & Technology (ACS Publishing)
  - Methods in Ecology and Evolution (Wiley)
 
+# Type of presentation
+- Short communication? (ca. 3-5 pages)
+
 # Structure ideas
 
 ## Background
