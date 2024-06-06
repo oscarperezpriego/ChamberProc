@@ -6,11 +6,15 @@
 
 # Potential Journals to submit article to
 
-- - Biogeosciences (EGU)
-    - Agricultural and Forest Meteorology (ScienceDirect)
-    - Plant Methods (BMC, part of Springer Nature) 
-    - Environmental Science & Technology (ACS Publishing)
-    - Methods in Ecology and Evolution (Wiley)
+ - Ecological Informatics (ScienceDirect)
+ - Biogeosciences (EGU)
+ - Agricultural and Forest Meteorology (ScienceDirect)
+ - Plant Methods (BMC, part of Springer Nature) 
+ - Environmental Science & Technology (ACS Publishing)
+ - Methods in Ecology and Evolution (Wiley)
+
+# Type of presentation
+- Short communication? (ca. 3-5 pages)
 
 # Structure ideas
 
