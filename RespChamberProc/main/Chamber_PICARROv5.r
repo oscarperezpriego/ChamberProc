@@ -28,6 +28,8 @@ library("RespChamberProc")
 library("devtools")
 library("stringr")
 library("ggplot2")
+library("data.table")
+library("lubridate") 
 
 
 # ## Set working directory
@@ -35,7 +37,6 @@ setwd("/Users/ms/Library/CloudStorage/OneDrive-SharedLibraries-UniversidaddeCó
 
 
 # Preparing the Chamber data ----------------------------------------------
-
 
 ## 1. The .dat file is downloaded from the chamber logger after the field campaign. 
 
@@ -49,17 +50,15 @@ results_dir <- paste0(rel_pathname,"results/",str_sub(fileName,end=-18))
 dir.create(results_dir)
 
 
-library(data.table)
+#read dataset
 ds0 <- fread(paste0(rel_pathname,fileName), sep ="auto")
 
-library("lubridate") 
 ds0$TIMESTAMP <- as.POSIXct(paste0(ds0$DATE," ",ds0$TIME), "%Y-%m-%d %H:%M:%S", tz= "UTC")
 
 ## The logger is accumulating data from previous field campaigns. 
 #  Here we subset data from a given field campaign. (Entrar hora del inicio de observationes y fin (convert to UTC))
 ds <- subset(ds0, as.numeric(TIMESTAMP) >= as.numeric(as.POSIXctUTC("2022-05-01 00:00:00")) )
 ds <- subset(ds, as.numeric(TIMESTAMP) <= as.numeric(as.POSIXctUTC("2025-04-15 23:00:00" )) )
-
 
 
 # Correcting for gas density and units conversions ------------------------
@@ -109,19 +108,31 @@ ds <- left_join(ds,Additional_Weather_Data ,by=join_by("TIMESTAMP"=="DATETIME_ho
 
 
 ## get an overview of the data (for the whole subset)
-plot(ds$TIMESTAMP, ds$H2Oppt, pch = ".", ylab = "H2O (ppt)", xlab = "Time")
-plot(ds$TIMESTAMP,ds$CO2_dry, pch = ".", ylab = "CO2 (ppm)", xlab = "Time")
-plot(ds$TIMESTAMP,ds$CH4_dry, pch = ".", ylab = "CH4 (ppm)", xlab = "Time")
-plot(ds$TIMESTAMP,ds$NH3_dry, pch = ".")
-plot(ds$TIMESTAMP,ds$N2O_dry, pch = ".")
-plot(ds$TIMESTAMP,ds$AirTemp, pch = ".")
-plot(ds$TIMESTAMP,ds$Pa, pch = ".")
-plot(ds$TIMESTAMP,ds$rel_humidity, pch = ".")
-plot(ds$TIMESTAMP,ds$shortwave_radiation, pch = ".")
-plot(ds$TIMESTAMP,ds$ET0, pch = ".") #ET0 FAO Evapotranspiration (mm)
+# plot(ds$TIMESTAMP, ds$H2Oppt, pch = ".", ylab = "H2O (ppt)", xlab = "Time")
+# plot(ds$TIMESTAMP,ds$CO2_dry, pch = ".", ylab = "CO2 (ppm)", xlab = "Time")
+# plot(ds$TIMESTAMP,ds$CH4_dry, pch = ".", ylab = "CH4 (ppm)", xlab = "Time")
+# plot(ds$TIMESTAMP,ds$NH3_dry, pch = ".")
+# plot(ds$TIMESTAMP,ds$N2O_dry, pch = ".")
+# plot(ds$TIMESTAMP,ds$AirTemp, pch = ".")
+# plot(ds$TIMESTAMP,ds$Pa, pch = ".")
+# plot(ds$TIMESTAMP,ds$rel_humidity, pch = ".")
+# plot(ds$TIMESTAMP,ds$shortwave_radiation, pch = ".")
+# plot(ds$TIMESTAMP,ds$ET0, pch = ".") #ET0 FAO Evapotranspiration (mm)
 
 plot(ds$TIMESTAMP,ds$Collar, pch = ".", ylab = "Collar (Chamber)",xlab = "Time")
 
+### facet plot of time series (for whole subset)
+ds_gas_long <- gather(ds, key="gas", value="value", c("CO2_dry","H2Oppt","CH4_dry","NH3_dry","N2O_dry"))
+ggplot(ds_gas_long, aes(x=TIMESTAMP, y=value))+
+  ggtitle(format(ds$TIMESTAMP,"%d/%m/%Y")[1])+
+  geom_point(pch = ".")+
+  facet_wrap(~factor(gas,levels=c("CO2_dry","H2Oppt","CH4_dry","NH3_dry","N2O_dry")),ncol=1,scales = "free")
+
+ds_envar_long <- gather(ds, key="envar", value="value", c("AirTemp","Pa","rel_humidity","shortwave_radiation","ET0"))
+ggplot(ds_envar_long, aes(x=TIMESTAMP, y=value))+
+  ggtitle(format(ds$TIMESTAMP,"%d/%m/%Y")[1])+
+  geom_point(pch = ".")+
+  facet_wrap(~factor(envar,levels=c("AirTemp","Pa","rel_humidity","shortwave_radiation","ET0")),ncol=1,scales = "free")
 
 
 # Chunk creation ----------------------------------------------------------
@@ -169,7 +180,6 @@ selected_chunk=4
 
 df <- dsChunk[dsChunk$iChunk==selected_chunk,]
 plot(df$TIMESTAMP, df$CO2_dry)
-
 
 
 # Computing the flux for single chunks ------------------------------------------------------
