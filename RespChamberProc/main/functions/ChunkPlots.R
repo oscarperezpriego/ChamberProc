@@ -12,7 +12,7 @@ chunk_labels <- function(dsChunk, gas_column, y_multiplier) {
 # Function to generate plots
 chunk_plot <- function(dsChunk, gas_column, labels, y_col) {
   ggplot(dsChunk, aes(x = TIMESTAMP, y = {{ gas_column }})) +
-    geom_point() +
+    geom_point(pch='.') +
     facet_wrap(~ iChunk, scales = "free") +
     geom_text(data = labels, aes(x = x, y = y, label = paste("Collar", Collar, sep = " ")),
               hjust = 1, vjust = 1, inherit.aes = FALSE)
