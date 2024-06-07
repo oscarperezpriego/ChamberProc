@@ -97,7 +97,6 @@ ds$H2O_dry <- corrConcDilution(ds, colConc = "H2Oppt", colVapour = "H2Oppt")
 
 ds$VPD <- calcVPD( ds$AirTemp, ds$Pa, ds$H2Oppt) ## Here we calculate plant-to-air vapour pressure deficit
 
-
 #--Extract duplicated rows
 ds <- ds[!duplicated(ds$TIMESTAMP),]
 
@@ -119,20 +118,35 @@ ds <- left_join(ds,Additional_Weather_Data ,by=join_by("TIMESTAMP"=="DATETIME_ho
 
 
 ## get an overview of the data (for the whole subset)
-plot(ds$TIMESTAMP, ds$H2Oppt, pch = ".", ylab = "H2O (ppt)", xlab = "Time")
-plot(ds$TIMESTAMP,ds$CO2_dry, pch = ".", ylab = "CO2 (ppm)", xlab = "Time")
-plot(ds$TIMESTAMP,ds$CH4_dry, pch = ".", ylab = "CH4 (ppm)", xlab = "Time")
-plot(ds$TIMESTAMP,ds$NH3_dry, pch = ".")
-plot(ds$TIMESTAMP,ds$N2O_dry, pch = ".")
-plot(ds$TIMESTAMP,ds$AirTemp, pch = ".")
-plot(ds$TIMESTAMP,ds$Pa, pch = ".")
-plot(ds$TIMESTAMP,ds$rel_humidity, pch = ".")
-plot(ds$TIMESTAMP,ds$shortwave_radiation, pch = ".")
-plot(ds$TIMESTAMP,ds$ET0, pch = ".") #ET0 FAO Evapotranspiration (mm)
+# plot(ds$TIMESTAMP, ds$H2Oppt, pch = ".", ylab = "H2O (ppt)", xlab = "Time")
+# plot(ds$TIMESTAMP,ds$CO2_dry, pch = ".", ylab = "CO2 (ppm)", xlab = "Time")
+# plot(ds$TIMESTAMP,ds$CH4_dry, pch = ".", ylab = "CH4 (ppm)", xlab = "Time")
+# plot(ds$TIMESTAMP,ds$NH3_dry, pch = ".")
+# plot(ds$TIMESTAMP,ds$N2O_dry, pch = ".")
+# plot(ds$TIMESTAMP,ds$AirTemp, pch = ".")
+# plot(ds$TIMESTAMP,ds$Pa, pch = ".")
+# plot(ds$TIMESTAMP,ds$rel_humidity, pch = ".")
+# plot(ds$TIMESTAMP,ds$shortwave_radiation, pch = ".")
+# plot(ds$TIMESTAMP,ds$ET0, pch = ".") #ET0 FAO Evapotranspiration (mm)
 
 plot(ds$TIMESTAMP,ds$Collar, pch = ".", ylab = "Collar (Chamber)",xlab = "Time")
 
+### facet plot of time series (for whole subset)
+ds_gas_long <- gather(ds, key="gas", value="value", c("CO2_dry","H2Oppt","CH4_dry","NH3_dry","N2O_dry"))
+ggplot(ds_gas_long, aes(x=TIMESTAMP, y=value))+
+  geom_point(pch = ".")+
+  facet_wrap(~gas,ncol=1,scales = "free")
 
+ds_envar_long <- gather(ds, key="envar", value="value", c("AirTemp","Pa","rel_humidity","shortwave_radiation","ET0"))
+ggplot(ds_envar_long, aes(x=TIMESTAMP, y=value))+
+  geom_point(pch = ".")+
+  facet_wrap(~envar,ncol=1,scales = "free")
+
+```
+
+```{r}
+#| label: create-chunks
+#| message: false
 
 # Chunk creation ----------------------------------------------------------
 
