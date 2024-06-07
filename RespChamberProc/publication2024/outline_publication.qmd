@@ -17,8 +17,6 @@ bibliography: 'bibliography.bib'
 #| label: load-pkgs
 #| message: false
 
-newpackagename <- "[NEWPACKAGENAME]" #enter here the name of the R package
-
 library("rlang")
 library("changepoint")
 library("nlme")
@@ -31,9 +29,38 @@ library("RespChamberProc")
 library("devtools")
 library("stringr")
 library("ggplot2")
+library("data.table")
+library("lubridate") 
 ```
 
+```{r}
+#| label: project-setup
+#| message: false
+#| 
 
+rel_pathname <- "Data_Jesus/" #"Data_Adrian/Agosto/19/"
+fileName <- "JFAADS2174-20220531-080209-DataLog_User.dat" #set here file name
+
+newpackagename <- "[NEWPACKAGENAME]" #enter here the name of the R package
+
+#create folder with the name of the measurement archive to save results and plots therein
+dir.create(paste0(rel_pathname,"results"))
+
+results_dir <- paste0(rel_pathname,"results/",str_sub(fileName,end=-18))
+dir.create(results_dir)
+```
+
+```{r}
+#| label: read-and-prepare-data
+#| message: false
+
+
+ds0 <- fread(paste0(rel_pathname,fileName), sep ="auto")
+## The logger is accumulating data from previous field campaigns. 
+#  Here we subset data from a given field campaign. (Entrar hora del inicio de observationes y fin (convert to UTC))
+ds <- subset(ds0, as.numeric(TIMESTAMP) >= as.numeric(as.POSIXctUTC("2022-05-01 00:00:00")) )
+ds <- subset(ds, as.numeric(TIMESTAMP) <= as.numeric(as.POSIXctUTC("2025-04-15 23:00:00" )) )
+```
 
 
 
@@ -53,31 +80,29 @@ All calculations were done using R Statistical Software version `r paste(version
 
 # Results
 
-## Case study:
+## Case study: Data Jesus
 
 
 
-<!-- ```{r} -->
-<!-- #| label: fig-meaningless -->
-<!-- #| fig-cap: A meaningless scatterplot -->
-<!-- #| fig-width: 5 -->
-<!-- #| fig-height: 5 -->
-<!-- #| fig-align: center -->
-<!-- #| out-width: 50% -->
-<!-- #| echo: false -->
-<!-- plot(runif(25), runif(25)) -->
-<!-- ``` -->
+
+```{r}
+#| label: example-CO2-timeseries
+#| fig-cap: An example time series of CO2
+#| fig-width: 10
+#| fig-height: 5
+#| fig-align: center
+#| out-width: 50%
+#| echo: false
+
+
+
+
+```
 
 # Discussion
 
 # Conclusions
 
 
-<!-- ```{r} -->
-<!-- #| label: tbl-simple -->
-<!-- #| tbl-cap: Caption centered above table -->
-<!-- #| echo: true -->
-<!-- knitr::kable(head(mtcars)[,1:4]) -->
-<!-- ``` -->
 
 # References {.unnumbered}
