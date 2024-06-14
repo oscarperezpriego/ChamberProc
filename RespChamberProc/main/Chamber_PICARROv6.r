@@ -6,7 +6,7 @@
 
 # Install necessary packages ----------------------------------------------
 # install.packages("devtools")
-# devtools::install_github("bgctw/RespChamberProc")
+#devtools::install_github("bgctw/RespChamberProc")
 # 
 # pck <- c("rlang", "changepoint", "nlme", "segmented", "tibble",  "dplyr", "purrr", "RespChamberProc","elevatr","openmeteo")
 # 
@@ -39,6 +39,10 @@ library(openmeteo) #retrieves historical weather data from https://open-meteo.co
 
 
 # Setup -------------------------------------------------------------------
+# ## Set working directory
+setwd("/Users/ms/Research Projects/Espana/UCO_Chamber/RespChamberProc/RespChamberProc")
+
+
 latDeciDeg <- 37.91514875822371 #enter here latitude in Geographical Coordinates (decimal degrees); crs =4326)
 lonDeciDeg <- -4.72405536319233 #enter here longitude in Decimal Degrees
 
@@ -52,6 +56,9 @@ dir.create(paste0(results_pathname,"results"))
 results_dir <- paste0(results_pathname,"results/",str_sub(fileName,end=-18))
 dir.create(results_dir)
 
+# fit chambers in parallel inside calcClosedChamberFluxForChunkSpecs
+plan(multisession, workers = 6) 
+
 
 # Read and prepare data ---------------------------------------------------
 
@@ -60,7 +67,7 @@ ds0$TIMESTAMP <- as.POSIXct(paste0(ds0$DATE," ",ds0$TIME), "%Y-%m-%d %H:%M:%S", 
 ## The logger is accumulating data from previous field campaigns. 
 #  Here we subset data from a given field campaign. (Entrar hora del inicio de observationes y fin (convert to UTC))
 ds <- subset(ds0, as.numeric(TIMESTAMP) >= as.numeric(as.POSIXctUTC("2022-05-31 08:00:00")) )
-ds <- subset(ds, as.numeric(TIMESTAMP) <= as.numeric(as.POSIXctUTC("2022-05-31 10:00:00" )) )
+ds <- subset(ds, as.numeric(TIMESTAMP) <= as.numeric(as.POSIXctUTC("2022-06-01 06:00:00" )) )
 
 
 # load additional functions -----------------------------------------------
@@ -74,7 +81,7 @@ source("main/functions/ChunkPlots.R") # load function to generate plots for each
 Additional_Weather_Data <- getAdditionalWeatherVariables(latDeciDeg, lonDeciDeg,format(min(ds$TIMESTAMP),"%Y-%m-%d"),format(max(ds$TIMESTAMP),"%Y-%m-%d"))
 
 # For the case of PICARRO IRGA gives dry mole fractions for CO2, N2O, CH4, but not for NH3 and H2O 
-ds$Collar <- ds$solenoid_valves %>% as.integer()
+Collar <-  ds$solenoid_valves %>% as.integer()
 ds$H2Oppt <- ds$H2O*10 # H2O from PICARRO is in %.Needs to be in ppt --> We need to multiply by 10 
 ds$N2O_dry <- ds$N2O_dry1min
 ds$NH3_dry <- 10E-3*corrConcDilution(ds, colConc = "NH3", colVapour = "H2Oppt")  #NH3 from PICARRO is in ppb --> multiply colVapour by 10^-3 to get ppm
@@ -99,8 +106,8 @@ ds <- left_join(ds,Additional_Weather_Data ,by=join_by("TIMESTAMP_hour"=="DATETI
 ds$VPD <- calcVPD( ds$AirTemp, ds$Pa, ds$H2Oppt) ## Here we calculate plant-to-air vapour pressure deficit
 
 ## get an overview of the data (for the whole subset)
-#p_collar <- plot(ds$TIMESTAMP,ds$Collar, pch = ".", ylab = "Collar (Chamber)",xlab = "Time")
-
+p_collar <- plot(ds$TIMESTAMP,ds$Collar, pch = ".", ylab = "Collar (Chamber)",xlab = "Time")
+p_collar
 ### facet plot of time series (for whole subset)
 ds_gas_long <- gather(ds, key="gas", value="value", c("CO2_dry","H2Oppt","CH4_dry","NH3_dry","N2O_dry"))
 p_gas_facet <- ggplot(ds_gas_long, aes(x=TIMESTAMP, y=value))+
@@ -120,10 +127,12 @@ p_envar_facet
 # Chunk creation ----------------------------------------------------------
 #-- In order to process each measurement cycle independently, 
 #-- we first determine parts of the time series that are contiguous, 
-#-- i.e. without gaps and without change of an index variable, here variable collar.
-dsChunk <- subsetContiguous(ds, colTime = "TIMESTAMP", colIndex = "Collar",
-                            gapLength = 12, minNRec = 180, minTime = 180, indexNA = 13) #indexNA excludes selected index columns (here: collar). gapLength should not be too short, otherwise error
-dsChunk %>% group_by(iChunk) %>% summarise(collar = first(collar)) %>%  head()
+#-- i.e. without gaps and without change of an index variable, here variable collar. #indexNA excludes selected index columns (here: collar). gapLength should not be too short, otherwise error
+dsChunk <- subsetContiguous(ds, colTime = "TIMESTAMP", colIndex = Collar,
+                            gapLength = 12, minNRec = 180, minTime = 180, indexNA = 13) 
+
+mapped_collars <- dsChunk %>% group_by(iChunk) %>% summarise(collar = first(collar)) %>%  head() 
+
 
 ## DataFrame collar_spec then needs to specify for each collar id in column collar, 
 # the colums area (m2) and volume (m3), as well a tlag (s), the lag time between start of the cycle , i.e. the start of the chunk (usually chamber closing time), and the time when the gas reaches the sensor.
@@ -168,49 +177,54 @@ df <- dsChunk[dsChunk$iChunk==selected_chunk,]
 
 resFit <- calcClosedChamberFlux(df
                                 , fRegress = c(lin = regressFluxLinear, tanh = regressFluxTanh, exp = regressFluxExp, poly= regressFluxSquare)
+                                , debugInfo = list(omitEstimateLeverage = FALSE)	# faster
                                 , colConc = "CO2_dry", colTime = "TIMESTAMP"	# colum names conc ~ timeInSeconds
                                 , colTemp = "AirTemp", colPressure = "Pa"		#Temp in degC, Pressure in Pa
-                                , volume = collar_spec$volume, area = collar_spec$area
-                                , minTLag = 30,  maxLag = 120 
+                                , volume = 0.4*0.4*0.4, area = 0.4*0.4
+                                , minTLag = 60,  maxLag = 120 
                                 , concSensitivity = 0.01	
 )
 
 
 resH2OFit <- calcClosedChamberFlux(df
                                    , fRegress = c(lin = regressFluxLinear, tanh = regressFluxTanh, exp = regressFluxExp, poly= regressFluxSquare)
+                                   , debugInfo = list(omitEstimateLeverage = FALSE)	# faster
                                    , colConc = "H2Oppt", colTime = "TIMESTAMP"
                                    , colTemp = "AirTemp", colPressure = "Pa"	
-                                   , volume = collar_spec$volume, area = collar_spec$area			
-                                   , minTLag = 30,  maxLag = 150, 
+                                   , volume = 0.4*0.4*0.4, area = 0.4*0.4			
+                                   , minTLag = 60,  maxLag = 120, 
                                    , concSensitivity = 0.01	
 )
 
 
 resCH4Fit <- calcClosedChamberFlux(df
                                    , fRegress = c(lin = regressFluxLinear, tanh = regressFluxTanh, exp = regressFluxExp, poly= regressFluxSquare)
+                                   , debugInfo = list(omitEstimateLeverage = FALSE)	# faster
                                    , colConc = "CH4_dry", colTime = "TIMESTAMP"
                                    , colTemp = "AirTemp", colPressure = "Pa"
-                                   , volume = collar_spec$volume, area = collar_spec$area
-                                   , minTLag = 30,  maxLag = 150 
+                                   , volume = 0.4*0.4*0.4, area = 0.4*0.4
+                                   , minTLag = 60,  maxLag = 120 
                                    , concSensitivity = 0.01
 )
 
 
 resNH3Fit <- calcClosedChamberFlux(df
                                    , fRegress = c(lin = regressFluxLinear, tanh = regressFluxTanh, exp = regressFluxExp, poly= regressFluxSquare)
+                                   , debugInfo = list(omitEstimateLeverage = FALSE)	# faster
                                    , colConc = "NH3_dry", colTime = "TIMESTAMP"
                                    , colTemp = "AirTemp", colPressure = "Pa"
-                                   , volume = collar_spec$volume, area = collar_spec$area
-                                   , minTLag = 30,  maxLag = 150 
+                                   , volume = 0.4*0.4*0.4, area = 0.4*0.4
+                                   , minTLag = 60,  maxLag = 120 
                                    , concSensitivity = 0.01
 )
 
 
 resN2OFit <- calcClosedChamberFlux(df
                                    , fRegress = c(lin = regressFluxLinear, tanh = regressFluxTanh, exp = regressFluxExp, poly= regressFluxSquare)
+                                   , debugInfo = list(omitEstimateLeverage = FALSE)	# faster
                                    , colConc = "N2O_dry", colTime = "TIMESTAMP"
                                    , colTemp = "AirTemp", colPressure = "Pa"
-                                   , volume = collar_spec$volume, area = collar_spec$area
+                                   , volume = 0.4*0.4*0.4, area = 0.4*0.4
                                    , minTLag = 30,  maxLag = 150 
                                    , concSensitivity = 0.01
 )
@@ -232,14 +246,10 @@ plotResp(df, resN2OFit,colConc = "N2O_dry",ylab="N2O_dry (ppm)",xlab="time (Minu
 # -- Function calcClosedChamberFluxForChunks helps you with subsetting the data 
 # -- and applying function calcClosedChamberFlux to each subset.
 
-# fit chambers in parallel inside calcClosedChamberFluxForChunkSpecs
-plan(multisession, workers = 4) 
-
-
 collar_spec2 <- mutate(collar_spec, tlag = 16) #One can save processing time and avoid failures in the non-robust breakpoint-detection by specifying a fixed lag-time (may differ across collars) with the collar specification.
 
 system.time(res <- ddply(dsChunk, .(iChunk), function(dsi){
-  collar <- dsi$Collar[1]
+  collar <- dsi$collar[1]
   iChunk = dsi$iChunk[1]
   print( paste(iChunk, dsi$TIMESTAMP[1], " Collar: ",collar) )
 
