@@ -57,7 +57,7 @@ results_dir <- paste0(results_pathname,"results/",str_sub(fileName,end=-18))
 dir.create(results_dir)
 
 # fit chambers in parallel inside calcClosedChamberFluxForChunkSpecs
-plan(multisession, workers = 6) 
+plan(multisession, workers = 4) 
 
 
 # Read and prepare data ---------------------------------------------------
@@ -81,7 +81,7 @@ source("main/functions/ChunkPlots.R") # load function to generate plots for each
 Additional_Weather_Data <- getAdditionalWeatherVariables(latDeciDeg, lonDeciDeg,format(min(ds$TIMESTAMP),"%Y-%m-%d"),format(max(ds$TIMESTAMP),"%Y-%m-%d"))
 
 # For the case of PICARRO IRGA gives dry mole fractions for CO2, N2O, CH4, but not for NH3 and H2O 
-Collar <-  ds$solenoid_valves %>% as.integer()
+ds$Collar <-  ds$solenoid_valves %>% as.integer()
 ds$H2Oppt <- ds$H2O*10 # H2O from PICARRO is in %.Needs to be in ppt --> We need to multiply by 10 
 ds$N2O_dry <- ds$N2O_dry1min
 ds$NH3_dry <- 10E-3*corrConcDilution(ds, colConc = "NH3", colVapour = "H2Oppt")  #NH3 from PICARRO is in ppb --> multiply colVapour by 10^-3 to get ppm
@@ -128,7 +128,7 @@ p_envar_facet
 #-- In order to process each measurement cycle independently, 
 #-- we first determine parts of the time series that are contiguous, 
 #-- i.e. without gaps and without change of an index variable, here variable collar. #indexNA excludes selected index columns (here: collar). gapLength should not be too short, otherwise error
-dsChunk <- subsetContiguous(ds, colTime = "TIMESTAMP", colIndex = Collar,
+dsChunk <- subsetContiguous(ds, colTime = "TIMESTAMP", colIndex = "Collar",
                             gapLength = 12, minNRec = 180, minTime = 180, indexNA = 13) 
 
 mapped_collars <- dsChunk %>% group_by(iChunk) %>% summarise(collar = first(collar)) %>%  head() 
