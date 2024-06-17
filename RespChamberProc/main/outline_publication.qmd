@@ -62,7 +62,6 @@ dir.create(results_dir)
 
 # Introduction
 
-<<<<<<< HEAD
 ## Background and Challenges
 
 \[Broad overview about gas flux measurements in general\] Measuring gas fluxes in a chamber provides useful information on plant-atmosphere interactions and processes (e.g. REF). However, each measurement includes systematic and random errors (e.g. @Perez-Priego2015)
@@ -103,8 +102,6 @@ We extended the package *RespChamberFlux* (@RespChamberProc) by various function
 We analyze the gas-specific measurement times that are needed for the used set-up in order to minimize the errors by 
 [create plots!] 
 <!-- How do fluxes and uncertainties vary with the selection of the calculation window? -->
-=======
-## Background
 
 -   gas flux measurements
 -   Picarro
@@ -120,7 +117,7 @@ We demonstrate the use of the package with data from a case study located in Có
 All calculations were done using R Statistical Software version `r paste(version$major,version$minor,sep=".")` (@RSoftware).
 
 We extended the package *RespChamberFlux* (@RespChamberProc) by various functions...
->>>>>>> 86cae037c8eb6e140849bff0c7b49c687bdc364f
+
 
 # Results
 
@@ -128,11 +125,6 @@ We extended the package *RespChamberFlux* (@RespChamberProc) by various function
 #| label: read-and-prepare-data
 #| message: false
 #| warning: false
-<<<<<<< HEAD
-=======
-
->>>>>>> 86cae037c8eb6e140849bff0c7b49c687bdc364f
-
 
 ds0 <- fread(paste0(data_pathname,fileName), sep ="auto")
 ds0$TIMESTAMP <- as.POSIXct(paste0(ds0$DATE," ",ds0$TIME), "%Y-%m-%d %H:%M:%S", tz= "UTC")
@@ -322,7 +314,6 @@ resN2OFit <- calcClosedChamberFlux(df
 
 
 ```{r}
-<<<<<<< HEAD
 #| label: duration-uncertainty
 #| eval: false
 
@@ -384,12 +375,6 @@ plot( sdFlux ~ duration, resDur_N2O$statAll[[1]] )
 #should we define a criterium here for SD time? (should we create a synthetic mean curve from all measurements?)
 
 ```
-
-
-=======
-#| label: compute-fluxes
-#| eval: false
->>>>>>> 86cae037c8eb6e140849bff0c7b49c687bdc364f
 
 
 
@@ -503,27 +488,20 @@ plot( sdFlux ~ duration, resDur_N2O$statAll[[1]] )
 
 ```
 
-<<<<<<< HEAD
 ## Case study: Data Jesus (HOW IS THE STUDY SITE CALLED?)
 
 ### Overview of the measurement data
 
 The entire time series of the Picarro measurement data on `r format(ds$TIMESTAMP,"%d/%m/%Y")[1]` for the study site XXX (REF to figure studysite) are shown in @fig-gas_facet.
 
-```{r}
-#| label: fig-gas_facet
-#| fig-cap: !expr paste("Entire time series of for the gases CO2, H2O, CH4, NH3, and N2O measured with the Picarro system on", format(ds$TIMESTAMP,"%d/%m/%Y")[1])
-=======
 ## Case study: Data Jesus
 
 ### Overview of the measurement data
-
 First, the time series of the Picarro measurement data on `r format(ds$TIMESTAMP,"%d/%m/%Y")[1]` for the study site XXX (REF to figure studysite) is shown (@fig-gas_facet).
 
 ```{r}
 #| label: fig-gas_facet
-#| fig-cap: Time series of various gases measured with the Picarro system 
->>>>>>> 86cae037c8eb6e140849bff0c7b49c687bdc364f
+#| fig-cap: !expr paste("Entire time series of for the gases CO2, H2O, CH4, NH3, and N2O measured with the Picarro system on", format(ds$TIMESTAMP,"%d/%m/%Y")[1])
 #| fig-width: 10
 #| fig-height: 5
 #| fig-align: center
@@ -545,7 +523,7 @@ The function `subsetContiguous`from *RespChamberProc* subsets the entire time se
 #| echo: false
 
 p_CO2
-<<<<<<< HEAD
+
 
 ```
 
@@ -573,38 +551,12 @@ plotResp(df, resCH4Fit,colConc = "CH4_dry",ylab="CH4_dry (ppm)", label = paste("
 plotResp(df, resNH3Fit,colConc = "NH3_dry",ylab="NH3_dry (ppm)", label = paste("Chunk",selected_chunk,sep = " "))
 
 plotResp(df, resN2OFit,colConc = "N2O_dry",ylab="N2O_dry (ppm)", label = paste("Chunk",selected_chunk,sep = " "))	
-=======
->>>>>>> 86cae037c8eb6e140849bff0c7b49c687bdc364f
+
 
 ```
 
 
 The function `calcClosedChamberFlux` from *RespChamberProc* calculates the chamber flux for various gases and provides the best fit, as shown in @fig-selectedchunk for chunk '`r selected_chunk`'
-
-```{r}
-#| label: fig-selectedchunk
-#| layout-ncol: 2
-#| fig-cap: Fitted trends for a selected chunk
-#| fig-subcap: 
-#|    - CO2
-#|    - H2O
-#|    - CH4
-#|    - NH3
-#|    - N2O
-
-#| echo: false
-
-plotResp(df, resFit, label = paste("Chunk",selected_chunk,sep = " "))	
-
-plotResp(df, resH2OFit,colConc = "H2Oppt",ylab="H2O (ppt)", label = paste("Chunk",selected_chunk,sep = " "))	
-
-plotResp(df, resCH4Fit,colConc = "CH4_dry",ylab="CH4_dry (ppm)", label = paste("Chunk",selected_chunk,sep = " "))	
-
-plotResp(df, resNH3Fit,colConc = "NH3_dry",ylab="NH3_dry (ppm)", label = paste("Chunk",selected_chunk,sep = " "))
-
-plotResp(df, resN2OFit,colConc = "N2O_dry",ylab="N2O_dry (ppm)", label = paste("Chunk",selected_chunk,sep = " "))	
-
-```
 
 
 
