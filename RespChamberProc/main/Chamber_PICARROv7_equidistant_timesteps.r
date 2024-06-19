@@ -98,10 +98,10 @@ ds <- ds[!duplicated(ds$TIMESTAMP),] # extract duplicated rows
 ##create  continuous timestamp vector (here: interval=1 second)
 regular_timesteps <- seq(min(ds$TIMESTAMP),max(ds$TIMESTAMP), by="1 sec")
 
-collar_df <- tibble("TIMESTAMP"=ds$TIMESTAMP,"collar"=ds$solenoid_valvesInt)
+Collar_df <- tibble("TIMESTAMP"=ds$TIMESTAMP,"Collar"=ds$solenoid_valvesInt)
 
 ds <-convertToRegularTimesteps(ds,c("CO2_dry", "CH4_dry","H2Oppt", "NH3_dry","N2O_dry"),regular_timesteps)
-ds <- left_join(ds,collar_df,by=join_by("TIMESTAMP"=="TIMESTAMP")) %>% fill(.,collar,.direction="down")
+ds <- left_join(ds,Collar_df,by=join_by("TIMESTAMP"=="TIMESTAMP")) %>% fill(.,Collar,.direction="down")
 
 
 #-- In order to process each measurement cycle independently, 
@@ -117,7 +117,7 @@ ds <- left_join(ds,Additional_Weather_Data ,by=join_by("TIMESTAMP_hour"=="DATETI
 ds$VPD <- calcVPD( ds$AirTemp, ds$Pa, ds$H2Oppt) ## Here we calculate plant-to-air vapour pressure deficit
 
 ## get an overview of the data (for the whole subset)
-p_collar <- plot(ds$TIMESTAMP,ds$collar, pch = ".", ylab = "collar (Chamber)",xlab = "Time")
+p_collar <- plot(ds$TIMESTAMP,ds$Collar, pch = ".", ylab = "Collar (Chamber)",xlab = "Time")
 p_collar
 ### facet plot of time series (for whole subset)
 ds_gas_long <- gather(ds, key="gas", value="value", c("CO2_dry","H2Oppt","CH4_dry","NH3_dry","N2O_dry"))
@@ -140,7 +140,7 @@ p_envar_facet
 #-- In order to process each measurement cycle independently, 
 #-- we first determine parts of the time series that are contiguous, 
 #-- i.e. without gaps and without change of an index variable, here variable collar. #indexNA excludes selected index columns (here: collar). gapLength should not be too short, otherwise error
-dsChunk <- subsetContiguous(ds, colTime = "TIMESTAMP", colIndex = "collar",
+dsChunk <- subsetContiguous(ds, colTime = "TIMESTAMP", colIndex = "Collar",
                             gapLength = 12, minNRec = 180, minTime = 180, indexNA = 13) 
 
 mapped_collars <- dsChunk %>% group_by(iChunk) %>% summarise(collar = first(collar)) %>%  head() 
@@ -267,9 +267,9 @@ clusterEvalQ(cl, library(RespChamberProc))
 
 
 system.time(res <- ddply(dsChunk, .(iChunk), function(dsi){
-  collar <- dsi$collar[1]
+  collar <- dsi$Collar[1]
   iChunk = dsi$iChunk[1]
-  print( paste(iChunk, dsi$TIMESTAMP[1], " collar: ",collar) )
+  print( paste(iChunk, dsi$TIMESTAMP[1], " Collar: ",collar) )
 
 
   
@@ -295,8 +295,7 @@ res <- calcClosedChamberFluxForChunkSpecs(
     , maxLag = 200
   )		 
 #   
-  resCH4 <- 
-    calcClosedChamberFluxForChunkSpecs(
+  resCH4 <- calcClosedChamberFluxForChunkSpecs(
       dsi, collar_spec2
       , colTemp = "AirTemp", colPressure = "Pa"	
       , fRegress = c(lin = regressFluxLinear, tanh = regressFluxTanh, exp = regressFluxExp, poly= regressFluxSquare)	
@@ -329,12 +328,11 @@ res <- calcClosedChamberFluxForChunkSpecs(
     , maxLag = 200
   )		 
 #   
-#   
-  
-  #   get additional environmental variables at the initial time
+
   to <- ifelse(res_CO2$tLag == 0, 1, res_CO2$tLag)
   dsiInitial <- dsi[to, , drop = FALSE]
   
+  #   get additional environmental variables at the initial time
   cbind( data.frame( time=dsiInitial[,"TIMESTAMP"], collar=collar
                      , CO2_flux=res$fluxMedian, CO2_flux_sd=res$sdFlux, Fregress_CO2=res$iFRegress, r2_CO2=res$r2
                      , H2O_flux=resH2O$fluxMedian , H2O_flux_sd=resH2O$sdFlux, Fregress_H2O=resH2O$iFRegress, r2_H2O=resH2O$r2
@@ -346,6 +344,10 @@ res <- calcClosedChamberFluxForChunkSpecs(
 }
 ))
 
+# Stop the cluster
+stopCluster(cl)
+
+# calculate flux for the entire dataset
 res_CO2 <- calcClosedChamberFluxForChunkSpecs(
   dsChunk, collar_spec2
   , colTemp = "AirTemp", colPressure = "Pa"
